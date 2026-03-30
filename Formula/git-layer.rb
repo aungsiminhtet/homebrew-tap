@@ -31,9 +31,8 @@ class GitLayer < Formula
   end
 
   def install
-    bin.install Dir["*/layer"]
-    bin.install Dir["*/git-layer"]
-    doc.install Dir["*/README.md"]
+    bin.install "layer", "git-layer"
+    doc.install "README.md"
   end
 
   test do
