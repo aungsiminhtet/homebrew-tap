@@ -1,41 +1,74 @@
 class GitLayer < Formula
-  desc "Manage .git/info/exclude so personal AI files stay out of git"
+  desc "Manage .git/info/exclude so your personal AI files stay out of git — without touching .gitignore."
   homepage "https://github.com/aungsiminhtet/git-layer"
-  version "0.1.7"
-  license "MIT"
-
-  depends_on "git"
-
-  on_macos do
-    on_arm do
-      url "https://github.com/aungsiminhtet/git-layer/releases/download/v0.1.7/git-layer-aarch64-apple-darwin.tar.xz"
-      sha256 "08081347ac54310728097f8bf9946d1b11d3ddbcf5af5db30c48abe95ad06915"
+  version "0.1.8"
+  if OS.mac?
+    if Hardware::CPU.arm?
+      url "https://github.com/aungsiminhtet/git-layer/releases/download/v0.1.8/git-layer-aarch64-apple-darwin.tar.xz"
+      sha256 "65bb6b6088fb06b1f5a6b0dc8ea0cc56c10390edf34a62fbf1f5a61018f2cb1c"
     end
-
-    on_intel do
-      url "https://github.com/aungsiminhtet/git-layer/releases/download/v0.1.7/git-layer-x86_64-apple-darwin.tar.xz"
-      sha256 "9ff79b40151f3a5fb2002bccb3bfca3c93812cc8ce5eee4e7885bb974af064bc"
+    if Hardware::CPU.intel?
+      url "https://github.com/aungsiminhtet/git-layer/releases/download/v0.1.8/git-layer-x86_64-apple-darwin.tar.xz"
+      sha256 "0734604243ca95032b71c03a5873199f47d1171e8b9b5b817637b4419ac00196"
     end
   end
-
-  on_linux do
-    on_arm do
-      url "https://github.com/aungsiminhtet/git-layer/releases/download/v0.1.7/git-layer-aarch64-unknown-linux-gnu.tar.xz"
-      sha256 "109433ea810acdecb66554dec02ac47e25f7b941840669f26a0028a34a97c585"
+  if OS.linux?
+    if Hardware::CPU.arm?
+      url "https://github.com/aungsiminhtet/git-layer/releases/download/v0.1.8/git-layer-aarch64-unknown-linux-gnu.tar.xz"
+      sha256 "3d5ef28c3dd98340ab17d90832623753519faa494f2f929b40f59c7d3630c2a7"
     end
+    if Hardware::CPU.intel?
+      url "https://github.com/aungsiminhtet/git-layer/releases/download/v0.1.8/git-layer-x86_64-unknown-linux-gnu.tar.xz"
+      sha256 "50a4a43768426925fdc4911ef5300add22fb42949a4bc7c68b6700ce5afad818"
+    end
+  end
+  license "MIT"
 
-    on_intel do
-      url "https://github.com/aungsiminhtet/git-layer/releases/download/v0.1.7/git-layer-x86_64-unknown-linux-gnu.tar.xz"
-      sha256 "61b28b9f0f403ed53aae6f5c522f7b1568a87975e7e96817f6283f4aa7d3a331"
+  BINARY_ALIASES = {
+    "aarch64-apple-darwin": {},
+    "aarch64-unknown-linux-gnu": {},
+    "x86_64-apple-darwin": {},
+    "x86_64-pc-windows-gnu": {},
+    "x86_64-unknown-linux-gnu": {}
+  }
+
+  def target_triple
+    cpu = Hardware::CPU.arm? ? "aarch64" : "x86_64"
+    os = OS.mac? ? "apple-darwin" : "unknown-linux-gnu"
+
+    "#{cpu}-#{os}"
+  end
+
+  def install_binary_aliases!
+    BINARY_ALIASES[target_triple.to_sym].each do |source, dests|
+      dests.each do |dest|
+        bin.install_symlink bin/source.to_s => dest
+      end
     end
   end
 
   def install
-    bin.install "layer", "git-layer"
-    doc.install "README.md"
-  end
+    if OS.mac? && Hardware::CPU.arm?
+      bin.install "git-layer", "layer"
+    end
+    if OS.mac? && Hardware::CPU.intel?
+      bin.install "git-layer", "layer"
+    end
+    if OS.linux? && Hardware::CPU.arm?
+      bin.install "git-layer", "layer"
+    end
+    if OS.linux? && Hardware::CPU.intel?
+      bin.install "git-layer", "layer"
+    end
 
-  test do
-    assert_match "Manage .git/info/exclude", shell_output("#{bin}/layer --help")
+    install_binary_aliases!
+
+    # Homebrew will automatically install these, so we don't need to do that
+    doc_files = Dir["README.*", "readme.*", "LICENSE", "LICENSE.*", "CHANGELOG.*"]
+    leftover_contents = Dir["*"] - doc_files
+
+    # Install any leftover files in pkgshare; these are probably config or
+    # sample files.
+    pkgshare.install(*leftover_contents) unless leftover_contents.empty?
   end
 end
